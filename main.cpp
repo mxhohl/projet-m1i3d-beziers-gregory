@@ -3,7 +3,11 @@
 
 #include <iostream>
 #include <fstream>
-#include <GL/gl.h>
+#ifdef OSX
+    #include <OpenGL/OpenGL.h>
+#else
+    #include <GL/gl.h>
+#endif
 
 using namespace EZCOGL;
 
@@ -17,17 +21,16 @@ public:
     void interface_ogl() override;
 
 private:
-    std::shared_ptr<ShaderProgram> shaderProgram;
+    std::shared_ptr<ShaderProgram> cubicBezierShaderProgram;
+    std::shared_ptr<ShaderProgram> pointsShaderProgram;
 
-    GLuint vbo;
     GLuint vao;
 
 private:
-    int innerTesselationLevel;
     int outerTesselationLevel0;
     int outerTesselationLevel1;
-    int outerTesselationLevel2;
     float color[4];
+    int pointsSize;
 };
 
 std::string readFile(const std::string& path) {
@@ -41,28 +44,35 @@ std::string readFile(const std::string& path) {
 }
 
 Viewer::Viewer() :
-        vbo(0), vao(0),
-        innerTesselationLevel(1),
+        vao(0),
         outerTesselationLevel0(1),
         outerTesselationLevel1(1),
-        outerTesselationLevel2(1),
-        color{1., 0., 0., 1.} {
+        color{1., 0., 0., 1.},
+        pointsSize(10) {
 }
 
 void Viewer::init_ogl() {
-    shaderProgram = ShaderProgram::create({
-        {GL_VERTEX_SHADER, readFile("resources/shaders/test_vert.glsl")},
-        {GL_TESS_CONTROL_SHADER, readFile("resources/shaders/test_tessCont.glsl")},
-        {GL_TESS_EVALUATION_SHADER, readFile("resources/shaders/test_tessEval.glsl")},
-        {GL_FRAGMENT_SHADER, readFile("resources/shaders/test_frag.glsl")}
+    cubicBezierShaderProgram = ShaderProgram::create({
+        {GL_VERTEX_SHADER, readFile("resources/shaders/basic_vert.glsl")},
+        {GL_TESS_CONTROL_SHADER, readFile("resources/shaders/cubicBezier_tessCont.glsl")},
+        {GL_TESS_EVALUATION_SHADER, readFile("resources/shaders/cubicBezier_tessEval.glsl")},
+        {GL_FRAGMENT_SHADER, readFile("resources/shaders/basic_frag.glsl")}
+    }, "");
+
+    pointsShaderProgram = ShaderProgram::create({
+        {GL_VERTEX_SHADER, readFile("resources/shaders/basic_vert.glsl")},
+        {GL_FRAGMENT_SHADER, readFile("resources/shaders/basic_frag.glsl")}
     }, "");
 
     float vertices[] = {
-            +0.0, +0.5, +0.0,
-            +0.5, -0.5, +0.0,
-            -0.5, -0.5, +0.0
+            -0.5, -0.5, +0.0,
+            -0.3, +0.25, +0.0,
+            +0.5, +0.5, +0.0,
+            +0.5, -0.5, +0.0
     };
 
+
+    GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -77,47 +87,61 @@ void Viewer::init_ogl() {
     glEnableVertexAttribArray(0);
 
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glClearColor(0., 0., 0., 1.);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void Viewer::draw_ogl() {
-    shaderProgram->bind();
     glClear(GL_COLOR_BUFFER_BIT);
 
+    cubicBezierShaderProgram->bind();
+
     glUniform1f(
-            glGetUniformLocation(shaderProgram->id(), "uInnerLevel"),
-            innerTesselationLevel
-    );
-    glUniform1f(
-            glGetUniformLocation(shaderProgram->id(), "uOuterLevel0"),
+            glGetUniformLocation(cubicBezierShaderProgram->id(), "uOuterLevel0"),
             outerTesselationLevel0
     );
     glUniform1f(
-            glGetUniformLocation(shaderProgram->id(), "uOuterLevel1"),
+            glGetUniformLocation(cubicBezierShaderProgram->id(), "uOuterLevel1"),
             outerTesselationLevel1
-    );
-    glUniform1f(
-            glGetUniformLocation(shaderProgram->id(), "uOuterLevel2"),
-            outerTesselationLevel2
     );
 
     glUniform4fv(
-            glGetUniformLocation(shaderProgram->id(), "uColor"),
+            glGetUniformLocation(cubicBezierShaderProgram->id(), "uColor"),
             1,
             color
     );
 
     glBindVertexArray(vao);
 
-    glPatchParameteri(GL_PATCH_VERTICES, 3);
-    glDrawArrays(GL_PATCHES, 0, 3);
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
+    glDrawArrays(GL_PATCHES, 0, 4);
     glBindVertexArray(0);
 
-    shaderProgram->unbind();
+    cubicBezierShaderProgram->unbind();
+
+
+    pointsShaderProgram->bind();
+    glBindVertexArray(vao);
+
+    glUniform4f(
+            glGetUniformLocation(pointsShaderProgram->id(), "uColor"),
+            0., 1., 0., .3
+    );
+    glDrawArrays(GL_LINE_STRIP, 0, 4);
+
+    glUniform4f(
+            glGetUniformLocation(pointsShaderProgram->id(), "uColor"),
+            0., 1., 0., 1.
+    );
+    glPointSize(pointsSize);
+    glDrawArrays(GL_POINTS, 0, 4);
+
+    glBindVertexArray(0);
+    pointsShaderProgram->unbind();
+
 }
 
 void Viewer::interface_ogl() {
@@ -126,15 +150,14 @@ void Viewer::interface_ogl() {
 
     if (ImGui::TreeNode("Rendering")) {
         ImGui::ColorEdit4("Color", color);
+        ImGui::DragInt("CP Size", &pointsSize, 1, 0, 40);
 
         ImGui::TreePop();
     }
 
     if (ImGui::TreeNode("Tesselation Levels")) {
-        ImGui::SliderInt("Inner", &innerTesselationLevel, 1, 20);
-        ImGui::SliderInt("Outer 0", &outerTesselationLevel0, 1, 20);
-        ImGui::SliderInt("Outer 1", &outerTesselationLevel1, 1, 20);
-        ImGui::SliderInt("Outer 2", &outerTesselationLevel2, 1, 20);
+        ImGui::SliderInt("Outer 0", &outerTesselationLevel0, 0, 50);
+        ImGui::SliderInt("Outer 1", &outerTesselationLevel1, 0, 50);
 
         ImGui::TreePop();
     }
