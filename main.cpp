@@ -123,7 +123,7 @@ void Viewer::init_bezierCurves_vao() {
 
 void Viewer::init_bezierSurfaces_vao() {
     bezierSurfacesCPCount = 4 * 4;
-    /*
+
     float vertices[3 * bezierSurfacesCPCount];
 
     srand(time(nullptr));
@@ -133,28 +133,9 @@ void Viewer::init_bezierSurfaces_vao() {
         for (size_t y = 0; y < 4; ++y) {
             vertices[(y * 4 + x) * 3] = (x * offset) - hSize;
             vertices[(y * 4 + x) * 3 + 1] = (y * offset) - hSize;
-            vertices[(y * 4 + x) * 3 + 2] = (float)rand() / RAND_MAX * offset;
+            vertices[(y * 4 + x) * 3 + 2] = static_cast<float>(rand() % 2);
         }
     }
-    */
-    float vertices[] = {
-            0., 2., 0.,
-            1., 1., 0.,
-            2., 1., 0.,
-            3., 2., 0.,
-            0., 1., 1.,
-            1., -2., 1.,
-            2., 1., 1.,
-            3., 0., 1.,
-            0., 0., 2.,
-            1., 1., 2.,
-            2., 0., 2.,
-            3., -1., 2.,
-            0., 0., 3.,
-            1., 1., 3.,
-            2., -1., 3.,
-            3., -1., 3.
-    };
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
@@ -266,28 +247,28 @@ void Viewer::draw_ogl() {
         set_uniform_value("mvMatrix", mvMat);
 
         glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uInnerLevel0"),
+                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel0"),
                 innerTesselationLevel0
         );
         glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uInnerLevel1"),
+                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel1"),
                 innerTesselationLevel1
         );
 
         glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel0"),
+                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel0"),
                 outerTesselationLevel0
         );
         glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel1"),
+                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel1"),
                 outerTesselationLevel1
         );
         glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel2"),
+                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel2"),
                 outerTesselationLevel2
         );
         glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel3"),
+                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel3"),
                 outerTesselationLevel3
         );
 
@@ -310,11 +291,6 @@ void Viewer::draw_ogl() {
 
         set_uniform_value("projMatrix", projMat);
         set_uniform_value("mvMatrix", mvMat);
-        glUniform4f(
-                glGetUniformLocation(transformablePointsShaderProgram->id(), "uColor"),
-                0., 1., 0., .3
-        );
-        glDrawArrays(GL_LINE_STRIP, 0, bezierSurfacesCPCount);
 
         glUniform4f(
                 glGetUniformLocation(transformablePointsShaderProgram->id(), "uColor"),
