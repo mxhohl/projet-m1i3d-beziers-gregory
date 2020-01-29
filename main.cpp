@@ -4,15 +4,13 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#ifdef OSX
-    #include <OpenGL/OpenGL.h>
-#else
-    #include <GL/gl.h>
-#endif
+#include <random>
 
 using namespace EZCOGL;
 
-#define BASE_FOLDER "../"
+#define MACRO_STR(s) #s
+#define MACRO_XSTR(s) MACRO_STR(s)
+#define RESOURCE_PATH std::string(MACRO_XSTR(RESOURCES)) + '/'
 
 enum class Mode {
     BezierCurve = 0,
@@ -27,6 +25,39 @@ std::string to_string(Mode mode) {
             return "Bezier Surface";
         default:
             return "Unknown";
+    }
+}
+
+enum class DrawMode {
+    Point = 0,
+    Line = 1,
+    Fill = 2
+};
+
+std::string to_string(DrawMode mode) {
+    switch (mode) {
+        case DrawMode::Point:
+            return "Point";
+        case DrawMode::Line:
+            return "Line";
+        case DrawMode::Fill:
+            return "Fill";
+        default:
+            return "Unknown";
+    }
+}
+
+GLenum gl_draw_mode(DrawMode mode) {
+    switch (mode) {
+        case DrawMode::Point:
+            return GL_POINT;
+        case DrawMode::Line:
+            return GL_LINE;
+        case DrawMode::Fill:
+            return GL_FILL;
+        default:
+            std::cerr << "Unknwn draw mode. Using GL_POINT." << std::endl;
+            return GL_POINT;
     }
 }
 
@@ -47,13 +78,12 @@ private:
     std::shared_ptr<ShaderProgram> pointsShaderProgram;
     std::shared_ptr<ShaderProgram> transformablePointsShaderProgram;
 
-    GLuint vaoBezierCurves;
-    size_t bezierCurvesCPCount;
-    GLuint vaoBezierSurfaces;
-    size_t bezierSurfacesCPCount;
+    std::shared_ptr<VAO> vaoBezierCurves;
+    std::shared_ptr<VAO> vaoBezierSurfaces;
 
 private:
     Mode mode;
+    DrawMode drawMode;
 
     int outerTesselationLevel0;
     int outerTesselationLevel1;
@@ -68,9 +98,10 @@ private:
 };
 
 std::string readFile(const std::string& path) {
-    std::ifstream file{BASE_FOLDER + path, std::ifstream::in};
+    const std::string full_path = RESOURCE_PATH + path;
+    std::ifstream file{full_path, std::ifstream::in};
     if (!file.good()) {
-        std::cerr << "Unable to open file '" << path << "'" << std::endl;
+        std::cerr << "Unable to open file '" << full_path << "'" << std::endl;
         return "";
     }
     return std::string(std::istreambuf_iterator<char>(file),
@@ -78,11 +109,10 @@ std::string readFile(const std::string& path) {
 }
 
 Viewer::Viewer() :
-        vaoBezierCurves(0),
-        bezierCurvesCPCount(0),
-        vaoBezierSurfaces(0),
-        bezierSurfacesCPCount(0),
+        vaoBezierCurves(nullptr),
+        vaoBezierSurfaces(nullptr),
         mode(Mode::BezierCurve),
+        drawMode(DrawMode::Fill),
         outerTesselationLevel0(1),
         outerTesselationLevel1(1),
         innerTesselationLevel0(1),
@@ -94,90 +124,103 @@ Viewer::Viewer() :
 }
 
 void Viewer::init_bezierCurves_vao() {
-    float vertices[] = {
-            -0.5, -0.5, +0.0,
-            -0.3, +0.25, +0.0,
-            +0.5, +0.5, +0.0,
-            +0.5, -0.5, +0.0
+    std::vector<GLVec3> vertices = {
+            GLVec3{-0.5, -0.5, +0.0},
+            GLVec3{-0.3, +0.25, +0.0},
+            GLVec3{+0.5, +0.5, +0.0},
+            GLVec3{+0.5, -0.5, +0.0}
     };
-    bezierCurvesCPCount = 4;
 
+    auto vbo = VBO::create(vertices);
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-    glGenVertexArrays(1, &vaoBezierCurves);
-    glBindVertexArray(vaoBezierCurves);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    vaoBezierCurves = VAO::create({
+        {0, vbo}
+    });
 }
 
 void Viewer::init_bezierSurfaces_vao() {
-    bezierSurfacesCPCount = 4 * 4;
+    constexpr size_t dimU = 4;
+    constexpr size_t dimV = 4;
 
-    float vertices[3 * bezierSurfacesCPCount];
+    std::vector<GLVec3> vertices(dimU * dimV);
 
-    srand(time(nullptr));
-    const float offset = 1;
-    const float hSize = (offset * 4.f) / 2.f;
-    for (size_t x = 0; x < 4; ++x) {
-        for (size_t y = 0; y < 4; ++y) {
-            vertices[(y * 4 + x) * 3] = (x * offset) - hSize;
-            vertices[(y * 4 + x) * 3 + 1] = (y * offset) - hSize;
-            vertices[(y * 4 + x) * 3 + 2] = static_cast<float>(rand() % 2);
+    std::default_random_engine generator(
+            std::chrono::system_clock::now().time_since_epoch().count()
+    );
+    std::uniform_real_distribution<float> distribution(0.f, 2.f);
+    auto rand = std::bind(distribution, generator);
+
+    constexpr float offset = 1.f;
+    constexpr float uHalfSize = (offset * dimU) / 2.f;
+    constexpr float vHalfSize = (offset * dimV) / 2.f;
+
+    for (size_t u = 0; u < dimU; ++u) {
+        for (size_t v = 0; v < dimV; ++v) {
+            vertices.emplace_back(
+                    (u * offset) - uHalfSize,
+                    (v * offset) - vHalfSize,
+                    rand()
+            );
         }
     }
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-    glGenVertexArrays(1, &vaoBezierSurfaces);
-    glBindVertexArray(vaoBezierSurfaces);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    auto vbo = VBO::create(vertices);
+    vaoBezierSurfaces = VAO::create({
+        {0, vbo}
+    });
 }
 
 void Viewer::init_ogl() {
     bezierCurveShaderProgram = ShaderProgram::create({
-        {GL_VERTEX_SHADER, readFile("resources/shaders/basic_vert.glsl")},
-        {GL_TESS_CONTROL_SHADER, readFile("resources/shaders/curveBezier_tessCont.glsl")},
-        {GL_TESS_EVALUATION_SHADER, readFile("resources/shaders/curveBezier_tessEval.glsl")},
-        {GL_FRAGMENT_SHADER, readFile("resources/shaders/basic_frag.glsl")}
+        {
+            GL_VERTEX_SHADER,
+            readFile("shaders/basic_vert.glsl")
+        }, {
+            GL_TESS_CONTROL_SHADER,
+            readFile("shaders/curveBezier_tessCont.glsl")
+        }, {
+            GL_TESS_EVALUATION_SHADER,
+            readFile("shaders/curveBezier_tessEval.glsl")
+        }, {
+            GL_FRAGMENT_SHADER,
+            readFile("shaders/basic_frag.glsl")
+        }
     }, "");
 
     bezierSurfaceShaderProgram = ShaderProgram::create({
-        {GL_VERTEX_SHADER, readFile("resources/shaders/basicTransformable_vert.glsl")},
-        {GL_TESS_CONTROL_SHADER, readFile("resources/shaders/surfaceBezier_tessCont.glsl")},
-        {GL_TESS_EVALUATION_SHADER, readFile("resources/shaders/surfaceBezier_tessEval.glsl")},
-        {GL_FRAGMENT_SHADER, readFile("resources/shaders/basic_frag.glsl")}
+        {
+            GL_VERTEX_SHADER,
+            readFile("shaders/basicTransformable_vert.glsl")
+        }, {
+            GL_TESS_CONTROL_SHADER,
+            readFile("shaders/surfaceBezier_tessCont.glsl")
+        }, {
+            GL_TESS_EVALUATION_SHADER,
+            readFile("shaders/surfaceBezier_tessEval.glsl")
+        }, {
+            GL_FRAGMENT_SHADER,
+            readFile("shaders/basic_frag.glsl")
+        }
     }, "");
 
     pointsShaderProgram = ShaderProgram::create({
-        {GL_VERTEX_SHADER, readFile("resources/shaders/basic_vert.glsl")},
-        {GL_FRAGMENT_SHADER, readFile("resources/shaders/basic_frag.glsl")}
+        {
+            GL_VERTEX_SHADER,
+            readFile("shaders/basic_vert.glsl")
+        }, {
+            GL_FRAGMENT_SHADER,
+            readFile("shaders/basic_frag.glsl")
+        }
     }, "");
 
     transformablePointsShaderProgram = ShaderProgram::create({
-        {GL_VERTEX_SHADER, readFile("resources/shaders/basicTransformable_vert.glsl")},
-        {GL_FRAGMENT_SHADER, readFile("resources/shaders/basic_frag.glsl")}
+        {
+            GL_VERTEX_SHADER,
+            readFile("shaders/basicTransformable_vert.glsl")
+        }, {
+            GL_FRAGMENT_SHADER,
+            readFile("shaders/basic_frag.glsl")
+        }
     }, "");
 
     init_bezierCurves_vao();
@@ -194,7 +237,11 @@ void Viewer::draw_ogl() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPointSize(pointsSize);
 
+    glPolygonMode(GL_FRONT_AND_BACK, gl_draw_mode(drawMode));
+
     if (mode == Mode::BezierCurve) {
+        const auto& cpCount = vaoBezierCurves->length();
+
         bezierCurveShaderProgram->bind();
 
         glUniform1f(
@@ -205,39 +252,31 @@ void Viewer::draw_ogl() {
                 glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel1"),
                 outerTesselationLevel1
         );
+        set_uniform_value("uColor", GLVec4(color));
 
-        glUniform4fv(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uColor"),
-                1,
-                color
-        );
-
-        glBindVertexArray(vaoBezierCurves);
-        glPatchParameteri(GL_PATCH_VERTICES, bezierCurvesCPCount);
-        glDrawArrays(GL_PATCHES, 0, bezierCurvesCPCount);
-        glBindVertexArray(0);
+        vaoBezierCurves->bind();
+        glPatchParameteri(GL_PATCH_VERTICES, cpCount);
+        glDrawArrays(GL_PATCHES, 0, cpCount);
+        vaoBezierCurves->unbind();
 
         bezierCurveShaderProgram->unbind();
 
 
         pointsShaderProgram->bind();
-        glBindVertexArray(vaoBezierCurves);
+        vaoBezierCurves->bind();
 
-        glUniform4f(
-                glGetUniformLocation(pointsShaderProgram->id(), "uColor"),
-                0., 1., 0., .3
-        );
-        glDrawArrays(GL_LINE_STRIP, 0, bezierCurvesCPCount);
+        set_uniform_value("uColor", GLVec4({0., 1., 0., .3}));
+        glDrawArrays(GL_LINE_STRIP, 0, cpCount);
 
-        glUniform4f(
-                glGetUniformLocation(pointsShaderProgram->id(), "uColor"),
-                0., 1., 0., 1.
-        );
-        glDrawArrays(GL_POINTS, 0, bezierCurvesCPCount);
+        set_uniform_value("uColor", GLVec4({0., 1., 0., 1.}));
+        glDrawArrays(GL_POINTS, 0, cpCount);
 
-        glBindVertexArray(0);
+        vaoBezierCurves->unbind();
         pointsShaderProgram->unbind();
+
     } else if (mode == Mode::BezierSurface) {
+        const auto& cpCount = vaoBezierSurfaces->length();
+
         const auto& projMat = this->get_projection_matrix();
         const auto& mvMat = this->get_modelview_matrix();
 
@@ -245,6 +284,7 @@ void Viewer::draw_ogl() {
 
         set_uniform_value("projMatrix", projMat);
         set_uniform_value("mvMatrix", mvMat);
+        set_uniform_value("uColor", GLVec4(color));
 
         glUniform1f(
                 glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel0"),
@@ -272,33 +312,24 @@ void Viewer::draw_ogl() {
                 outerTesselationLevel3
         );
 
-        glUniform4fv(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uColor"),
-                1,
-                color
-        );
-
-        glBindVertexArray(vaoBezierSurfaces);
-        glPatchParameteri(GL_PATCH_VERTICES, bezierSurfacesCPCount);
-        glDrawArrays(GL_PATCHES, 0, bezierSurfacesCPCount);
-        glBindVertexArray(0);
+        vaoBezierSurfaces->bind();
+        glPatchParameteri(GL_PATCH_VERTICES, cpCount);
+        glDrawArrays(GL_PATCHES, 0, cpCount);
+        vaoBezierSurfaces->unbind();
 
         bezierSurfaceShaderProgram->unbind();
 
 
         transformablePointsShaderProgram->bind();
-        glBindVertexArray(vaoBezierSurfaces);
 
         set_uniform_value("projMatrix", projMat);
         set_uniform_value("mvMatrix", mvMat);
+        set_uniform_value("uColor", GLVec4({0., 1., 0., 1.}));
 
-        glUniform4f(
-                glGetUniformLocation(transformablePointsShaderProgram->id(), "uColor"),
-                0., 1., 0., 1.
-        );
-        glDrawArrays(GL_POINTS, 0, bezierSurfacesCPCount);
+        vaoBezierSurfaces->bind();
+        glDrawArrays(GL_POINTS, 0, cpCount);
+        vaoBezierSurfaces->unbind();
 
-        glBindVertexArray(0);
         transformablePointsShaderProgram->unbind();
     }
 }
@@ -314,6 +345,11 @@ void Viewer::interface_ogl() {
     );
 
     if (ImGui::TreeNode("Rendering")) {
+        ImGui::SliderInt(
+                ("Draw Mode - " + to_string(drawMode)).c_str(),
+                reinterpret_cast<int*>(&drawMode),
+                0, 2
+        );
         ImGui::ColorEdit4("Color", color);
         ImGui::SliderInt("CP Size", &pointsSize, 0, 40);
 
@@ -322,16 +358,48 @@ void Viewer::interface_ogl() {
 
     if (ImGui::TreeNode(("Parameters - " + to_string(mode)).c_str())) {
         if (mode == Mode::BezierCurve) {
-            ImGui::SliderInt("Outer Tess Level 0", &outerTesselationLevel0, 0, 50);
-            ImGui::SliderInt("Outer Tess Level 1", &outerTesselationLevel1, 0, 50);
+            ImGui::SliderInt(
+                    "Outer Tess Level 0",
+                    &outerTesselationLevel0,
+                    0, 50
+            );
+            ImGui::SliderInt(
+                    "Outer Tess Level 1",
+                    &outerTesselationLevel1,
+                    0, 50
+            );
         } else if (mode == Mode::BezierSurface) {
-            ImGui::SliderInt("Inner Tess Level 0", &innerTesselationLevel0, 0, 50);
-            ImGui::SliderInt("Inner Tess Level 1", &innerTesselationLevel1, 0, 50);
+            ImGui::SliderInt(
+                    "Inner Tess Level 0",
+                    &innerTesselationLevel0,
+                    0, 50
+            );
+            ImGui::SliderInt(
+                    "Inner Tess Level 1",
+                    &innerTesselationLevel1,
+                    0, 50
+            );
 
-            ImGui::SliderInt("Outer Tess Level 0", &outerTesselationLevel0, 0, 50);
-            ImGui::SliderInt("Outer Tess Level 1", &outerTesselationLevel1, 0, 50);
-            ImGui::SliderInt("Outer Tess Level 2", &outerTesselationLevel2, 0, 50);
-            ImGui::SliderInt("Outer Tess Level 3", &outerTesselationLevel3, 0, 50);
+            ImGui::SliderInt(
+                    "Outer Tess Level 0",
+                    &outerTesselationLevel0,
+                    0, 50
+            );
+            ImGui::SliderInt(
+                    "Outer Tess Level 1",
+                    &outerTesselationLevel1,
+                    0, 50
+            );
+            ImGui::SliderInt(
+                    "Outer Tess Level 2",
+                    &outerTesselationLevel2,
+                    0, 50
+            );
+            ImGui::SliderInt(
+                    "Outer Tess Level 3",
+                    &outerTesselationLevel3,
+                    0, 50
+            );
         }
 
         ImGui::TreePop();
