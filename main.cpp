@@ -244,6 +244,8 @@ void Viewer::draw_ogl() {
 
         bezierCurveShaderProgram->bind();
 
+        set_uniform_value("uColor", GLVec4(color));
+
         glUniform1f(
                 glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel0"),
                 outerTesselationLevel0
@@ -252,7 +254,8 @@ void Viewer::draw_ogl() {
                 glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel1"),
                 outerTesselationLevel1
         );
-        set_uniform_value("uColor", GLVec4(color));
+
+        set_uniform_value("uCPCount", cpCount);
 
         vaoBezierCurves->bind();
         glPatchParameteri(GL_PATCH_VERTICES, cpCount);
