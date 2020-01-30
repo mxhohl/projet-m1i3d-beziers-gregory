@@ -245,17 +245,9 @@ void Viewer::draw_ogl() {
         bezierCurveShaderProgram->bind();
 
         set_uniform_value("uColor", GLVec4(color));
-
-        glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel0"),
-                outerTesselationLevel0
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel1"),
-                outerTesselationLevel1
-        );
-
-        set_uniform_value("uCPCount", cpCount);
+        set_uniform_value("uOuterLevel0", static_cast<GLfloat>(outerTesselationLevel0));
+        set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
+        set_uniform_value("uCPCount", static_cast<GLuint>(cpCount));
 
         vaoBezierCurves->bind();
         glPatchParameteri(GL_PATCH_VERTICES, cpCount);
@@ -289,31 +281,12 @@ void Viewer::draw_ogl() {
         set_uniform_value("mvMatrix", mvMat);
         set_uniform_value("uColor", GLVec4(color));
 
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel0"),
-                innerTesselationLevel0
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel1"),
-                innerTesselationLevel1
-        );
-
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel0"),
-                outerTesselationLevel0
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel1"),
-                outerTesselationLevel1
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel2"),
-                outerTesselationLevel2
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel3"),
-                outerTesselationLevel3
-        );
+        set_uniform_value("uInnerLevel0", static_cast<GLfloat>(innerTesselationLevel0));
+        set_uniform_value("uInnerLevel1", static_cast<GLfloat>(innerTesselationLevel1));
+        set_uniform_value("uOuterLevel0", static_cast<GLfloat>(outerTesselationLevel0));
+        set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
+        set_uniform_value("uOuterLevel2", static_cast<GLfloat>(outerTesselationLevel2));
+        set_uniform_value("uOuterLevel3", static_cast<GLfloat>(outerTesselationLevel3));
 
         vaoBezierSurfaces->bind();
         glPatchParameteri(GL_PATCH_VERTICES, cpCount);

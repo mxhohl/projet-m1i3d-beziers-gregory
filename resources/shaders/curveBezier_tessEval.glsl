@@ -1,23 +1,6 @@
 #version 410
 
 layout (isolines, equal_spacing) in;
-/*
-void main() {
-    vec4 p0 = gl_in[0].gl_Position;
-    vec4 p1 = gl_in[1].gl_Position;
-    vec4 p2 = gl_in[2].gl_Position;
-    vec4 p3 = gl_in[3].gl_Position;
-
-    float u = gl_TessCoord.x;
-    // the basis functions:
-    float b0 = (1. - u) * (1. - u) * (1. - u);
-    float b1 = 3. * u * (1. - u) * (1. - u);
-    float b2 = 3. * u * u * (1. - u);
-    float b3 = u * u * u;
-
-    gl_Position = b0 * p0 + b1 * p1 + b2 * p2 + b3 * p3;
-}
-*/
 
 #define MAX_CP 8
 
@@ -43,7 +26,7 @@ vec4 deCasteljau(uint cp_count, float t) {
         points0[i] = gl_in[i].gl_Position;
     }
     points_count[0] = cp_count;
-    points_count[1] = cp_count - 1;
+    points_count[1] = cp_count; /* TODO: pourquoi cp_count et pas cp_count-1 ??????? */
 
     float it = 1.0 - t;
 
