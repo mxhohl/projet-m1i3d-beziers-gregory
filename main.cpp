@@ -128,7 +128,8 @@ void Viewer::init_bezierCurves_vao() {
             GLVec3{-0.5, -0.5, +0.0},
             GLVec3{-0.3, +0.25, +0.0},
             GLVec3{+0.5, +0.5, +0.0},
-            GLVec3{+0.5, -0.5, +0.0}
+            GLVec3{+0.0, -0.75, +0.0},
+            GLVec3{+0.5, -0.5, +0.0},
     };
 
     auto vbo = VBO::create(vertices);
