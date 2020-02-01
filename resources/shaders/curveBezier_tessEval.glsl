@@ -16,6 +16,10 @@ void main() {
     }
 }
 
+vec4 linearInterpolation(vec4 a, vec4 b, float t) {
+    return (1.0 - t) * a + t * b;
+}
+
 vec4 deCasteljau(uint cp_count, float t) {
     vec4 points0[MAX_CP];
     vec4 points1[MAX_CP];
@@ -28,14 +32,12 @@ vec4 deCasteljau(uint cp_count, float t) {
     points_count[0] = cp_count;
     points_count[1] = cp_count; /* TODO: pourquoi cp_count et pas cp_count-1 ??????? */
 
-    float it = 1.0 - t;
-
     while (points_count[current] > 1) {
         for (uint i = 0; i < points_count[current]; ++i) {
             if (current == 0) {
-                points0[i] = it * points1[i] + t * points1[i + 1];
+                points0[i] = linearInterpolation(points1[i], points1[i + 1], t);
             } else {
-                points1[i] = it * points0[i] + t * points0[i + 1];
+                points1[i] = linearInterpolation(points0[i], points0[i + 1], t);
             }
         }
 
