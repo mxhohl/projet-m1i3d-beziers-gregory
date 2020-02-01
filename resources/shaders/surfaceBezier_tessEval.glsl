@@ -1,40 +1,126 @@
 #version 410
 
+#define MAX_CP_U 8
+#define MAX_CP_V 8
+#define MAX_CP 32
+
 layout (quads, equal_spacing, ccw) in;
 
+uniform uint uCPUCount;
+uniform uint uCPVCount;
+
+
+vec4 deCasteljau1D(vec4 cp[MAX_CP], uint cp_count, float t);
+vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v);
+
+
 void main() {
-    vec4 p00 = gl_in[ 0].gl_Position;
-    vec4 p10 = gl_in[ 1].gl_Position;
-    vec4 p20 = gl_in[ 2].gl_Position;
-    vec4 p30 = gl_in[ 3].gl_Position;
-    vec4 p01 = gl_in[ 4].gl_Position;
-    vec4 p11 = gl_in[ 5].gl_Position;
-    vec4 p21 = gl_in[ 6].gl_Position;
-    vec4 p31 = gl_in[ 7].gl_Position;
-    vec4 p02 = gl_in[ 8].gl_Position;
-    vec4 p12 = gl_in[ 9].gl_Position;
-    vec4 p22 = gl_in[10].gl_Position;
-    vec4 p32 = gl_in[11].gl_Position;
-    vec4 p03 = gl_in[12].gl_Position;
-    vec4 p13 = gl_in[13].gl_Position;
-    vec4 p23 = gl_in[14].gl_Position;
-    vec4 p33 = gl_in[15].gl_Position;
+    if (uCPUCount > 0 && uCPUCount <= MAX_CP_U
+        && uCPVCount > 0 && uCPVCount <= MAX_CP_V
+        && uCPVCount * uCPUCount <= MAX_CP) {
+        gl_Position = deCasteljau2D(
+            uCPUCount, uCPVCount,
+            gl_TessCoord.x, gl_TessCoord.y
+        );
+    } else {
+        gl_Position = vec4(0., 0., 0., 1.);
+    }
+}
 
-    float u = gl_TessCoord.x;
-    float v = gl_TessCoord.y;
 
-    float bu0 = (1. - u) * (1. - u) * (1. - u);
-    float bu1 = 3. * u * (1. - u) * (1. - u);
-    float bu2 = 3. * u * u * (1. - u);
-    float bu3 = u * u * u;
+vec4 bilinearInterpolation(vec4 p00, vec4 p01, vec4 p10, vec4 p11,
+                           float u, float v) {
+    vec4 p1 = (1.0 - u) * p00 + u * p01;
+    vec4 p2 = (1.0 - u) * p10 + u * p11;
+    return (1.0 - v) * p1 + v * p2;
+}
 
-    float bv0 = (1. - v) * (1. - v) * (1. - v);
-    float bv1 = 3. * v * (1. - v) * (1. - v);
-    float bv2 = 3. * v * v * (1. - v);
-    float bv3 = v * v * v;
+vec4 linearInterpolation(vec4 a, vec4 b, float t) {
+    return (1.0 - t) * a + t * b;
+}
 
-    gl_Position = bu0 * (bv0 * p00 + bv1 * p01 + bv2 * p02 + bv3 * p03)
-                + bu1 * (bv0 * p10 + bv1 * p11 + bv2 * p12 + bv3 * p13)
-                + bu2 * (bv0 * p20 + bv1 * p21 + bv2 * p22 + bv3 * p23)
-                + bu3 * (bv0 * p30 + bv1 * p31 + bv2 * p32 + bv3 * p33);
+
+vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v) {
+    vec4 points0[MAX_CP];
+    vec4 points1[MAX_CP];
+    uint points_count[4];
+    uint current = 1;
+
+    for (uint i = 0; i < cp_u_count * cp_v_count; ++i) {
+        points0[i] = gl_in[i].gl_Position;
+    }
+    points_count[0] = cp_u_count; // u for 0
+    points_count[1] = cp_v_count; // v for 0
+    points_count[2] = cp_u_count; // u for 1
+    points_count[3] = cp_v_count; // v for 1
+
+    while (points_count[current * 2] > 1 && points_count[current * 2 + 1] > 1) {
+        for (int i = 0; i < points_count[current * 2]; ++i) {
+            for (int j = 0; j < points_count[current * 2 + 1]; ++j) {
+                if (current == 0) {
+                    points0[i] = bilinearInterpolation(
+                        points1[j * cp_u_count + i],
+                        points1[j * cp_u_count + i + 1],
+                        points1[(j + 1) * cp_u_count + i],
+                        points1[(j + 1) * cp_u_count + i + 1],
+                        u, v
+                    );
+                } else {
+                    points1[i] = bilinearInterpolation(
+                        points0[j * cp_u_count + i],
+                        points0[j * cp_u_count + i + 1],
+                        points0[(j + 1) * cp_u_count + i],
+                        points0[(j + 1) * cp_u_count + i + 1],
+                        u, v
+                    );
+                }
+            }
+        }
+
+        current = 1 - current;
+        points_count[current * 2] = points_count[(1 - current) * 2] - 1;
+        points_count[current * 2 + 1] = points_count[(1 - current) * 2 + 1] - 1;
+    }
+
+    if (current == 0) {
+        if (points_count[2] > points_count[3]) {
+            return deCasteljau1D(points1, points_count[2], u);
+        } else {
+            return deCasteljau1D(points1, points_count[3], v);
+        }
+    } else {
+        if (points_count[0] > points_count[1]) {
+            return deCasteljau1D(points0, points_count[0], u);
+        } else {
+            return deCasteljau1D(points0, points_count[1], v);
+        }
+    }
+}
+
+vec4 deCasteljau1D(vec4 cp[MAX_CP], uint cp_count, float t) {
+    vec4 points0[MAX_CP];
+    vec4 points1[MAX_CP];
+    uint points_count[2];
+    uint current = 1;
+
+    for (uint i = 0; i < cp_count; ++i) {
+        points0[i] = cp[i];
+    }
+    points_count[0] = cp_count;
+    points_count[1] = cp_count;
+
+    while (points_count[current] > 1) {
+        for (uint i = 0; i < points_count[current]; ++i) {
+            if (current == 0) {
+                points0[i] = linearInterpolation(points1[i], points1[i + 1], t);
+            } else {
+                points1[i] = linearInterpolation(points0[i], points0[i + 1], t);
+            }
+        }
+
+        current = 1 - current;
+        points_count[current] = points_count[1 - current] - 1;
+    }
+
+    return current == 0 ? points1[0] : points0[0];
 }

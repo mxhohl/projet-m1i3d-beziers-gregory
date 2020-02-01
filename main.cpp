@@ -80,6 +80,8 @@ private:
 
     std::shared_ptr<VAO> vaoBezierCurves;
     std::shared_ptr<VAO> vaoBezierSurfaces;
+    GLuint surfaceDimU;
+    GLuint surfaceDimV;
 
 private:
     Mode mode;
@@ -111,6 +113,8 @@ std::string readFile(const std::string& path) {
 Viewer::Viewer() :
         vaoBezierCurves(nullptr),
         vaoBezierSurfaces(nullptr),
+        surfaceDimU(0),
+        surfaceDimV(0),
         mode(Mode::BezierCurve),
         drawMode(DrawMode::Fill),
         outerTesselationLevel0(1),
@@ -169,6 +173,8 @@ void Viewer::init_bezierSurfaces_vao() {
     vaoBezierSurfaces = VAO::create({
         {0, vbo}
     });
+    surfaceDimU = dimU;
+    surfaceDimV = dimV;
 }
 
 void Viewer::init_ogl() {
@@ -288,6 +294,9 @@ void Viewer::draw_ogl() {
         set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
         set_uniform_value("uOuterLevel2", static_cast<GLfloat>(outerTesselationLevel2));
         set_uniform_value("uOuterLevel3", static_cast<GLfloat>(outerTesselationLevel3));
+
+        set_uniform_value("uCPUCount", surfaceDimU);
+        set_uniform_value("uCPVCount", surfaceDimV);
 
         vaoBezierSurfaces->bind();
         glPatchParameteri(GL_PATCH_VERTICES, cpCount);
