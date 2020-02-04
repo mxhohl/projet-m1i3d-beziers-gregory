@@ -147,7 +147,8 @@ void Viewer::init_bezierSurfaces_vao() {
     constexpr size_t dimU = 4;
     constexpr size_t dimV = 4;
 
-    std::vector<GLVec3> vertices(dimU * dimV);
+    std::vector<GLVec3> vertices;
+    vertices.reserve(dimU * dimV);
 
     std::default_random_engine generator(
             std::chrono::system_clock::now().time_since_epoch().count()

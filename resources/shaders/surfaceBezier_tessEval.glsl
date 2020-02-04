@@ -58,19 +58,19 @@ vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v) {
         for (int i = 0; i < points_count[current * 2]; ++i) {
             for (int j = 0; j < points_count[current * 2 + 1]; ++j) {
                 if (current == 0) {
-                    points0[i] = bilinearInterpolation(
-                        points1[j * cp_u_count + i],
-                        points1[j * cp_u_count + i + 1],
-                        points1[(j + 1) * cp_u_count + i],
-                        points1[(j + 1) * cp_u_count + i + 1],
+                    points0[i * cp_v_count + j] = bilinearInterpolation(
+                        points1[i * cp_v_count + j],
+                        points1[i * cp_v_count + j + 1],
+                        points1[(i + 1) * cp_v_count + j],
+                        points1[(i + 1) * cp_v_count + j + 1],
                         u, v
                     );
                 } else {
-                    points1[i] = bilinearInterpolation(
-                        points0[j * cp_u_count + i],
-                        points0[j * cp_u_count + i + 1],
-                        points0[(j + 1) * cp_u_count + i],
-                        points0[(j + 1) * cp_u_count + i + 1],
+                    points1[i * cp_v_count + j] = bilinearInterpolation(
+                        points0[i * cp_v_count + j],
+                        points0[i * cp_v_count + j + 1],
+                        points0[(i + 1) * cp_v_count + j],
+                        points0[(i + 1) * cp_v_count + j + 1],
                         u, v
                     );
                 }
@@ -85,14 +85,18 @@ vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v) {
     if (current == 0) {
         if (points_count[2] > points_count[3]) {
             return deCasteljau1D(points1, points_count[2], u);
-        } else {
+        } else if (points_count[2] < points_count[3]) {
             return deCasteljau1D(points1, points_count[3], v);
+        } else {
+            return points1[0];
         }
     } else {
         if (points_count[0] > points_count[1]) {
             return deCasteljau1D(points0, points_count[0], u);
-        } else {
+        } else if (points_count[0] < points_count[1]) {
             return deCasteljau1D(points0, points_count[1], v);
+        } else {
+            return points0[0];
         }
     }
 }
