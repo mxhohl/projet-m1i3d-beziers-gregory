@@ -145,7 +145,7 @@ void Viewer::init_bezierCurves_vao() {
 
 void Viewer::init_bezierSurfaces_vao() {
     constexpr size_t dimU = 4;
-    constexpr size_t dimV = 4;
+    constexpr size_t dimV = 5;
 
     std::vector<GLVec3> vertices;
     vertices.reserve(dimU * dimV);

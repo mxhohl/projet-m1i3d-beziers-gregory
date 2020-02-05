@@ -10,7 +10,7 @@ uniform uint uCPUCount;
 uniform uint uCPVCount;
 
 
-vec4 deCasteljau1D(vec4 cp[MAX_CP], uint cp_count, float t);
+vec4 deCasteljau1D(vec4 cp[MAX_CP], uint cp_count, uint offset, float t);
 vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v);
 
 
@@ -53,7 +53,7 @@ vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v) {
     points_count[1] = cp_v_count; // v for 0
     points_count[2] = cp_u_count; // u for 1
     points_count[3] = cp_v_count; // v for 1
-
+    
     while (points_count[current * 2] > 1 && points_count[current * 2 + 1] > 1) {
         for (int i = 0; i < points_count[current * 2]; ++i) {
             for (int j = 0; j < points_count[current * 2 + 1]; ++j) {
@@ -83,32 +83,32 @@ vec4 deCasteljau2D(uint cp_u_count, uint cp_v_count, float u, float v) {
     }
 
     if (current == 0) {
-        if (points_count[2] > points_count[3]) {
-            return deCasteljau1D(points1, points_count[2], u);
-        } else if (points_count[2] < points_count[3]) {
-            return deCasteljau1D(points1, points_count[3], v);
+        if (points_count[2] > 1) {
+            return deCasteljau1D(points1, points_count[2], cp_v_count, u);
+        } else if (points_count[3] > 1) {
+            return deCasteljau1D(points1, points_count[3], 0, v);
         } else {
             return points1[0];
         }
     } else {
-        if (points_count[0] > points_count[1]) {
-            return deCasteljau1D(points0, points_count[0], u);
-        } else if (points_count[0] < points_count[1]) {
-            return deCasteljau1D(points0, points_count[1], v);
+        if (points_count[0] > 1) {
+            return deCasteljau1D(points0, points_count[0], cp_v_count, u);
+        } else if (points_count[1] > 1) {
+            return deCasteljau1D(points0, points_count[1], 0, v);
         } else {
             return points0[0];
         }
     }
 }
 
-vec4 deCasteljau1D(vec4 cp[MAX_CP], uint cp_count, float t) {
+vec4 deCasteljau1D(vec4 cp[MAX_CP], uint cp_count, uint offset, float t) {
     vec4 points0[MAX_CP];
     vec4 points1[MAX_CP];
     uint points_count[2];
     uint current = 1;
 
     for (uint i = 0; i < cp_count; ++i) {
-        points0[i] = cp[i];
+        points0[i] = cp[i * (offset + 1)];
     }
     points_count[0] = cp_count;
     points_count[1] = cp_count;
