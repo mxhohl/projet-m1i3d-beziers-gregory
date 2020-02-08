@@ -5,7 +5,5 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_subdirectory(easycppogl)
 
-add_executable(bezier main.cpp)
-target_link_libraries(bezier easycppogl)
-target_compile_definitions(bezier PRIVATE
-        "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
+add_subdirectory(curves)
+add_subdirectory(rect_surface)
