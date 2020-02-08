@@ -21,29 +21,21 @@ vec4 linearInterpolation(vec4 a, vec4 b, float t) {
 }
 
 vec4 deCasteljau(uint cp_count, float t) {
-    vec4 points0[MAX_CP];
-    vec4 points1[MAX_CP];
-    uint points_count[2];
-    uint current = 1;
+    vec4 points[MAX_CP];
+    uint points_count;
 
     for (uint i = 0; i < cp_count; ++i) {
-        points0[i] = gl_in[i].gl_Position;
+        points[i] = gl_in[i].gl_Position;
     }
-    points_count[0] = cp_count;
-    points_count[1] = cp_count; /* TODO: pourquoi cp_count et pas cp_count-1 ??????? */
+    points_count = cp_count;
 
-    while (points_count[current] > 1) {
-        for (uint i = 0; i < points_count[current]; ++i) {
-            if (current == 0) {
-                points0[i] = linearInterpolation(points1[i], points1[i + 1], t);
-            } else {
-                points1[i] = linearInterpolation(points0[i], points0[i + 1], t);
-            }
+    while (points_count > 1) {
+        for (uint i = 0; i < points_count; ++i) {
+            points[i] = linearInterpolation(points[i], points[i + 1], t);
         }
 
-        current = 1 - current;
-        points_count[current] = points_count[1 - current] - 1;
+        --points_count;
     }
 
-    return current == 0 ? points1[0] : points0[0];
+    return points[0];
 }
