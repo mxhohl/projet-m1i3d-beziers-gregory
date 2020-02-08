@@ -1,6 +1,8 @@
 #version 410
 
-layout(vertices=16) out;
+#define MAX_CP 32
+
+layout(vertices=MAX_CP) out;
 
 uniform float uInnerLevel0;
 uniform float uInnerLevel1;

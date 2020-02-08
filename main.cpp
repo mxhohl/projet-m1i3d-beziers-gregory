@@ -80,6 +80,8 @@ private:
 
     std::shared_ptr<VAO> vaoBezierCurves;
     std::shared_ptr<VAO> vaoBezierSurfaces;
+    GLuint surfaceDimU;
+    GLuint surfaceDimV;
 
 private:
     Mode mode;
@@ -111,6 +113,8 @@ std::string readFile(const std::string& path) {
 Viewer::Viewer() :
         vaoBezierCurves(nullptr),
         vaoBezierSurfaces(nullptr),
+        surfaceDimU(0),
+        surfaceDimV(0),
         mode(Mode::BezierCurve),
         drawMode(DrawMode::Fill),
         outerTesselationLevel0(1),
@@ -128,7 +132,8 @@ void Viewer::init_bezierCurves_vao() {
             GLVec3{-0.5, -0.5, +0.0},
             GLVec3{-0.3, +0.25, +0.0},
             GLVec3{+0.5, +0.5, +0.0},
-            GLVec3{+0.5, -0.5, +0.0}
+            GLVec3{+0.0, -0.75, +0.0},
+            GLVec3{+0.5, -0.5, +0.0},
     };
 
     auto vbo = VBO::create(vertices);
@@ -139,10 +144,11 @@ void Viewer::init_bezierCurves_vao() {
 }
 
 void Viewer::init_bezierSurfaces_vao() {
-    constexpr size_t dimU = 4;
+    constexpr size_t dimU = 6;
     constexpr size_t dimV = 4;
 
-    std::vector<GLVec3> vertices(dimU * dimV);
+    std::vector<GLVec3> vertices;
+    vertices.reserve(dimU * dimV);
 
     std::default_random_engine generator(
             std::chrono::system_clock::now().time_since_epoch().count()
@@ -168,6 +174,8 @@ void Viewer::init_bezierSurfaces_vao() {
     vaoBezierSurfaces = VAO::create({
         {0, vbo}
     });
+    surfaceDimU = dimU;
+    surfaceDimV = dimV;
 }
 
 void Viewer::init_ogl() {
@@ -244,15 +252,10 @@ void Viewer::draw_ogl() {
 
         bezierCurveShaderProgram->bind();
 
-        glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel0"),
-                outerTesselationLevel0
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierCurveShaderProgram->id(), "uOuterLevel1"),
-                outerTesselationLevel1
-        );
         set_uniform_value("uColor", GLVec4(color));
+        set_uniform_value("uOuterLevel0", static_cast<GLfloat>(outerTesselationLevel0));
+        set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
+        set_uniform_value("uCPCount", static_cast<GLuint>(cpCount));
 
         vaoBezierCurves->bind();
         glPatchParameteri(GL_PATCH_VERTICES, cpCount);
@@ -286,31 +289,15 @@ void Viewer::draw_ogl() {
         set_uniform_value("mvMatrix", mvMat);
         set_uniform_value("uColor", GLVec4(color));
 
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel0"),
-                innerTesselationLevel0
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uInnerLevel1"),
-                innerTesselationLevel1
-        );
+        set_uniform_value("uInnerLevel0", static_cast<GLfloat>(innerTesselationLevel0));
+        set_uniform_value("uInnerLevel1", static_cast<GLfloat>(innerTesselationLevel1));
+        set_uniform_value("uOuterLevel0", static_cast<GLfloat>(outerTesselationLevel0));
+        set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
+        set_uniform_value("uOuterLevel2", static_cast<GLfloat>(outerTesselationLevel2));
+        set_uniform_value("uOuterLevel3", static_cast<GLfloat>(outerTesselationLevel3));
 
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel0"),
-                outerTesselationLevel0
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel1"),
-                outerTesselationLevel1
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel2"),
-                outerTesselationLevel2
-        );
-        glUniform1f(
-                glGetUniformLocation(bezierSurfaceShaderProgram->id(), "uOuterLevel3"),
-                outerTesselationLevel3
-        );
+        set_uniform_value("uCPUCount", surfaceDimU);
+        set_uniform_value("uCPVCount", surfaceDimV);
 
         vaoBezierSurfaces->bind();
         glPatchParameteri(GL_PATCH_VERTICES, cpCount);
