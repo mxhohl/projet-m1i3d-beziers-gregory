@@ -8,7 +8,10 @@ Viewer::Viewer() :
         dimV(0),
         drawMode(DrawMode::Fill),
         tesselationLevel(1),
-        color{1., 0., 0., 1.},
+        lightColor{1., 0., 0., 1.},
+        ka{0., 0., 0.},
+        kd{0., 0., 0.},
+        ks{0., 0., 0.},
         pointsSize(10) {
 }
 
@@ -47,31 +50,29 @@ void Viewer::init_bezierSurfaces_vao() {
 
 void Viewer::init_ogl() {
 
-    bezierSurfaceShaderProgram = ShaderProgram::create({
-                                                               {
-                                                                       GL_VERTEX_SHADER,
-                                                                       readFile("shaders/basicTransformable_vert.glsl")
-                                                               }, {
-                                                                       GL_TESS_CONTROL_SHADER,
-                                                                       readFile("shaders/bezier_surface_rect/tessCont.glsl")
-                                                               }, {
-                                                                       GL_TESS_EVALUATION_SHADER,
-                                                                       readFile("shaders/bezier_surface_rect/tessEval.glsl")
-                                                               }, {
-                                                                       GL_FRAGMENT_SHADER,
-                                                                       readFile("shaders/basic_frag.glsl")
-                                                               }
-                                                       }, "");
+    bezierSurfaceShaderProgram = ShaderProgram::create({{
+            GL_VERTEX_SHADER,
+            readFile("shaders/basicTransformable_vert.glsl")
+        }, {
+            GL_TESS_CONTROL_SHADER,
+            readFile("shaders/bezier_surface_rect/tessCont.glsl")
+        }, {
+            GL_TESS_EVALUATION_SHADER,
+            readFile("shaders/bezier_surface_rect/tessEval.glsl")
+        }, {
+            GL_FRAGMENT_SHADER,
+            readFile("shaders/phong_frag.glsl")
+        }
+    }, "");
 
-    transformablePointsShaderProgram = ShaderProgram::create({
-                                                                     {
-                                                                             GL_VERTEX_SHADER,
-                                                                             readFile("shaders/basicTransformable_vert.glsl")
-                                                                     }, {
-                                                                             GL_FRAGMENT_SHADER,
-                                                                             readFile("shaders/basic_frag.glsl")
-                                                                     }
-                                                             }, "");
+    transformablePointsShaderProgram = ShaderProgram::create({{
+            GL_VERTEX_SHADER,
+            readFile("shaders/basicTransformable_vert.glsl")
+        }, {
+            GL_FRAGMENT_SHADER,
+            readFile("shaders/basic_frag.glsl")
+        }
+    }, "");
 
     init_bezierSurfaces_vao();
 
@@ -97,7 +98,9 @@ void Viewer::draw_ogl() {
 
     set_uniform_value("projMatrix", projMat);
     set_uniform_value("mvMatrix", mvMat);
-    set_uniform_value("uColor", GLVec4(color));
+    // set_uniform_value("uLightColor", GLVec4(lightColor));
+    // set_uniform_value("uKa", ka);
+    // set_uniform_value("uKd", kd);
 
     set_uniform_value("uLevel", static_cast<GLfloat>(tesselationLevel));
 
@@ -135,8 +138,11 @@ void Viewer::interface_ogl() {
                 reinterpret_cast<int*>(&drawMode),
                 0, 2
         );
-        ImGui::ColorEdit4("Color", color);
         ImGui::SliderInt("CP Size", &pointsSize, 0, 40);
+
+        ImGui::ColorEdit4("Light Color", lightColor);
+        ImGui::SliderFloat3("Ka", ka, 0., 1.);
+        ImGui::SliderFloat3("Kd", kd, 0., 1.);
 
         ImGui::TreePop();
     }

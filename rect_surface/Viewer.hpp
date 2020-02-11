@@ -31,7 +31,10 @@ private:
 
     int tesselationLevel;
 
-    float color[4];
+    float lightColor[4];
+    float ka[3];
+    float kd[3];
+    float ks[3];
     int pointsSize;
 };
 

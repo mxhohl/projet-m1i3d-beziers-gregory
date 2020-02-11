@@ -25,7 +25,7 @@ private:
 private:
     int outerTesselationLevel1;
 
-    float color[4];
+    float lightColor[4];
     int pointsSize;
 };
 
