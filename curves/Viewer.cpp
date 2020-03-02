@@ -2,15 +2,18 @@
 
 #include "utils.hpp"
 
+#define SELECTION_RADIUS 0.01
+
 Viewer::Viewer() :
+        movingPointIndex(-1),
         vao(nullptr),
-        outerTesselationLevel1(1),
+        outerTesselationLevel1(50),
         color{1., 0., 0., 1.},
         pointsSize(10) {
 }
 
 void Viewer::init_vao() {
-    std::vector<GLVec3> vertices = {
+    controlPoints = {
             GLVec3{-0.5, -0.5, +0.0},
             GLVec3{-0.3, +0.25, +0.0},
             GLVec3{+0.5, +0.5, +0.0},
@@ -18,7 +21,7 @@ void Viewer::init_vao() {
             GLVec3{+0.5, -0.5, +0.0},
     };
 
-    auto vbo = VBO::create(vertices);
+    vbo = VBO::create(controlPoints);
 
     vao = VAO::create({{0, vbo}});
 }
@@ -111,11 +114,46 @@ void Viewer::interface_ogl() {
         ImGui::SliderInt(
                 "Points Count",
                 &outerTesselationLevel1,
-                0, 50
+                0, 100
         );
 
         ImGui::TreePop();
     }
 
     ImGui::End();
+}
+
+GLVec3 Viewer::windowToGlCoord(GLVec2 winCoord) {
+    return {
+        winCoord.x() / (width() / 2.f) - 1.f,
+        -(winCoord.y() / (height() / 2.f) - 1.f),
+        0.f
+    };
+}
+
+void Viewer::mouse_press_ogl(int32_t button, double x, double y) {
+    GLVec3 glCoord = windowToGlCoord({x, y});
+    for (size_t i = 0; i < controlPoints.size(); ++i) {
+        const auto& point = controlPoints[i];
+        if (glCoord.x() >= point.x() - SELECTION_RADIUS 
+         && glCoord.x() <= point.x() + SELECTION_RADIUS
+         && glCoord.y() >= point.y() - SELECTION_RADIUS
+         && glCoord.y() <= point.y() + SELECTION_RADIUS) {
+             movingPointIndex = i;
+             break;
+        }
+    }
+}
+
+void Viewer::mouse_release_ogl(int32_t button, double x, double y) {
+    movingPointIndex = -1;
+}
+
+void Viewer::mouse_move_ogl(double x, double y) {
+    if (movingPointIndex < 0) {
+        return;
+    }
+
+    controlPoints[movingPointIndex] = windowToGlCoord({x, y});
+    vbo->update(controlPoints);
 }

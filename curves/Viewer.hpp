@@ -14,12 +14,23 @@ public:
     void interface_ogl() override;
 
 private:
+    long int movingPointIndex;
+    void mouse_press_ogl(int32_t button, double x, double y) override;
+	void mouse_release_ogl(int32_t button, double x, double y) override;
+	void mouse_move_ogl(double x, double y) override;
+
+private:
     void init_vao();
+
+private:
+    GLVec3 windowToGlCoord(GLVec2 winCoord);
 
 private:
     std::shared_ptr<ShaderProgram> bezierCurveShaderProgram;
     std::shared_ptr<ShaderProgram> pointsShaderProgram;
 
+    std::vector<GLVec3> controlPoints;
+    std::shared_ptr<VBO> vbo;
     std::shared_ptr<VAO> vao;
 
 private:
