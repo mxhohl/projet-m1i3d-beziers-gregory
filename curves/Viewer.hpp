@@ -4,6 +4,9 @@
 #include "easycppogl_src/gl_viewer.h"
 #include "easycppogl_src/shader_program.h"
 
+#include "BezierRenderer.hpp"
+#include "BezierCurve.hpp"
+
 using namespace EZCOGL;
 
 class Viewer : public GLViewer {

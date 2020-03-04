@@ -7,5 +7,28 @@ add_subdirectory(easycppogl)
 
 include_directories(./common)
 
-add_subdirectory(curves)
-add_subdirectory(rect_surface)
+set(COMMON_SRC
+        ./common/BezierCurve.hpp
+        ./common/BezierCurve.cpp
+        ./common/BezierRenderer.hpp
+        ./common/BezierRenderer.cpp
+        ./common/RenderableBezier.hpp
+        ./common/utils.hpp)
+
+add_executable(curves 
+    ./curves/main.cpp 
+    ./curves/Viewer.cpp 
+    ./curves/Viewer.hpp
+    ${COMMON_SRC})
+target_link_libraries(curves easycppogl)
+target_compile_definitions(curves PRIVATE
+        "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
+
+add_executable(rect_surf 
+    ./rect_surface/main.cpp 
+    ./rect_surface/Viewer.cpp 
+    ./rect_surface/Viewer.hpp)
+target_link_libraries(rect_surf easycppogl)
+target_compile_definitions(rect_surf PRIVATE
+        "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
+        
