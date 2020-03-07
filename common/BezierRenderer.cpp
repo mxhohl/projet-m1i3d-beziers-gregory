@@ -40,17 +40,22 @@ void BezierRenderer::clear() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve) {
+void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve,
+                            float precision) {
     if (curve->updated) {
         curve->vbo->update(curve->getCtrlPoints());
-        curve->updated = true;
+        curve->updated = false;
     }
 
     const size_t cpCount = curve->getOrder() +1;
 
+    if (cpCount < 2) {
+        return;
+    }
+
     curveSP->bind();
-    set_uniform_value("uColor", curveColor);
-    // set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
+    // set_uniform_value("uColor", curveColor);
+    set_uniform_value("uOuterLevel1", static_cast<GLfloat>(precision));
     set_uniform_value("uCPCount", static_cast<GLuint>(cpCount));
 
     curve->vao->bind();
@@ -61,7 +66,7 @@ void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve) {
 
     cpSP->bind();
     curve->vao->bind();
-    set_uniform_value("uColor", ctrlPointsColor);
+    // set_uniform_value("uColor", ctrlPointsColor);
     glDrawArrays(GL_LINE_STRIP, 0, cpCount);
     glDrawArrays(GL_POINTS, 0, cpCount);
     curve->vao->unbind();
@@ -75,11 +80,14 @@ void BezierRenderer::setCtrlPointsSize(float size) {
 float BezierRenderer::getCtrlPointsSize() const {
     float size;
     glGetFloatv(GL_POINT_SIZE, &size);
-    return std::move(size);
+    return size;
 }
 
 void BezierRenderer::setCurveColor(const GLColor& color) {
     curveColor = color;
+    curveSP->bind();
+    set_uniform_value("uColor", curveColor);
+    curveSP->unbind();
 }
 
 GLColor BezierRenderer::getCurveColor() const {
@@ -88,6 +96,9 @@ GLColor BezierRenderer::getCurveColor() const {
 
 void BezierRenderer::setCtrlPointsColor(const GLColor& color) {
     ctrlPointsColor = color;
+    cpSP->bind();
+    set_uniform_value("uColor", ctrlPointsColor);
+    cpSP->unbind();
 }
 
 GLColor BezierRenderer::getCtrlPointsColor() const {

@@ -10,7 +10,8 @@ public:
     BezierRenderer();
 
     void clear();
-    void render(const std::shared_ptr<BezierCurve>& curve);
+    void render(const std::shared_ptr<BezierCurve>& curve,
+                float precision = 50.f);
 
     void setCtrlPointsSize(float size);
     float getCtrlPointsSize() const;

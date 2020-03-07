@@ -15,11 +15,11 @@ public:
 
 public:
     BezierCurve();
-    BezierCurve(size_t order);
-    BezierCurve(const std::vector<GLVec3>& ctrlPoints);
+    explicit BezierCurve(size_t order);
+    explicit BezierCurve(const std::vector<GLVec3>& ctrlPoints);
     BezierCurve(std::initializer_list<GLVec3> ctrlPoints);
     BezierCurve(const BezierCurve&);
-    BezierCurve(BezierCurve&&);
+    BezierCurve(BezierCurve&&) noexcept;
 
     size_t getOrder() const;
     void elevateOrder(size_t d = 1);

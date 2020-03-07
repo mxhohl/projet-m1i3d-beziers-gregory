@@ -2,60 +2,25 @@
 
 #include "utils.hpp"
 
-#define SELECTION_RADIUS 0.01
-
 Viewer::Viewer() :
         movingPointIndex(-1),
-        vao(nullptr),
         outerTesselationLevel1(50),
         color{1., 0., 0., 1.},
         pointsSize(10) {
 }
 
-void Viewer::init_vao() {
-    controlPoints = {
+
+void Viewer::init_ogl() {
+    bezierRenderer = std::make_unique<BezierRenderer>();
+    bezierCurve = std::make_shared<BezierCurve>(std::vector<GLVec3>{
             GLVec3{-0.5, -0.5, +0.0},
             GLVec3{-0.3, +0.25, +0.0},
             GLVec3{+0.5, +0.5, +0.0},
             GLVec3{+0.0, -0.75, +0.0},
             GLVec3{+0.5, -0.5, +0.0},
-    };
+    });
 
-    vbo = VBO::create(controlPoints);
-
-    vao = VAO::create({{0, vbo}});
-}
-
-void Viewer::init_ogl() {
-    bezierCurveShaderProgram = ShaderProgram::create({
-        {
-            GL_VERTEX_SHADER,
-            readFile("shaders/basic_vert.glsl")
-        }, {
-            GL_TESS_CONTROL_SHADER,
-            readFile("shaders/bezier_curves/tessCont.glsl")
-        }, {
-            GL_TESS_EVALUATION_SHADER,
-            readFile("shaders/bezier_curves/tessEval.glsl")
-        }, {
-            GL_FRAGMENT_SHADER,
-            readFile("shaders/basic_frag.glsl")
-        }
-    }, "");
-
-
-    pointsShaderProgram = ShaderProgram::create({
-        {
-            GL_VERTEX_SHADER,
-            readFile("shaders/basic_vert.glsl")
-        }, {
-            GL_FRAGMENT_SHADER,
-            readFile("shaders/basic_frag.glsl")
-        }
-    }, "");
-
-
-    init_vao();
+    bezierRenderer->setCtrlPointsColor({0, 1, 0, .5});
 
     set_scene_center(GLVec3(0, 0, 0));
     set_scene_radius(3.0);
@@ -67,36 +32,12 @@ void Viewer::init_ogl() {
 }
 
 void Viewer::draw_ogl() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPointSize(pointsSize);
+    bezierRenderer->setCurveColor({color[0], color[1], color[2], color[3]});
+    bezierRenderer->setCtrlPointsSize(static_cast<float>(pointsSize));
 
-    const auto& cpCount = vao->length();
-
-    bezierCurveShaderProgram->bind();
-
-    set_uniform_value("uColor", GLVec4(color));
-    set_uniform_value("uOuterLevel1", static_cast<GLfloat>(outerTesselationLevel1));
-    set_uniform_value("uCPCount", static_cast<GLuint>(cpCount));
-
-    vao->bind();
-    glPatchParameteri(GL_PATCH_VERTICES, cpCount);
-    glDrawArrays(GL_PATCHES, 0, cpCount);
-    vao->unbind();
-
-    bezierCurveShaderProgram->unbind();
-
-
-    pointsShaderProgram->bind();
-    vao->bind();
-
-    set_uniform_value("uColor", GLVec4({0., 1., 0., .3}));
-    glDrawArrays(GL_LINE_STRIP, 0, cpCount);
-
-    set_uniform_value("uColor", GLVec4({0., 1., 0., 1.}));
-    glDrawArrays(GL_POINTS, 0, cpCount);
-
-    vao->unbind();
-    pointsShaderProgram->unbind();
+    bezierRenderer->clear();
+    bezierRenderer->render(bezierCurve,
+                           static_cast<float>(outerTesselationLevel1));
 }
 
 void Viewer::interface_ogl() {
@@ -133,15 +74,11 @@ GLVec3 Viewer::windowToGlCoord(GLVec2 winCoord) {
 
 void Viewer::mouse_press_ogl(int32_t button, double x, double y) {
     GLVec3 glCoord = windowToGlCoord({x, y});
-    for (size_t i = 0; i < controlPoints.size(); ++i) {
-        const auto& point = controlPoints[i];
-        if (glCoord.x() >= point.x() - SELECTION_RADIUS 
-         && glCoord.x() <= point.x() + SELECTION_RADIUS
-         && glCoord.y() >= point.y() - SELECTION_RADIUS
-         && glCoord.y() <= point.y() + SELECTION_RADIUS) {
-             movingPointIndex = i;
-             break;
-        }
+    size_t pointIndex;
+    if (bezierCurve->getClosestCtrlPoint(glCoord, pointIndex)) {
+        movingPointIndex = pointIndex;
+    } else {
+        movingPointIndex = -1;
     }
 }
 
@@ -154,6 +91,5 @@ void Viewer::mouse_move_ogl(double x, double y) {
         return;
     }
 
-    controlPoints[movingPointIndex] = windowToGlCoord({x, y});
-    vbo->update(controlPoints);
+    bezierCurve->setCtrlPoint(movingPointIndex, windowToGlCoord({x, y}));
 }

@@ -15,7 +15,7 @@ BezierCurve::BezierCurve(std::initializer_list<GLVec3> ctrlPoints) :
         RenderableBezier(ctrlPoints) {}
 
 BezierCurve::BezierCurve(const BezierCurve&) = default;
-BezierCurve::BezierCurve(BezierCurve&&) = default;
+BezierCurve::BezierCurve(BezierCurve&&) noexcept = default;
 
 size_t BezierCurve::getOrder() const {
     return ctrlPoints.size() -1;

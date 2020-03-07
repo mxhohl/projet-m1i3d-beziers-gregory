@@ -23,18 +23,11 @@ private:
 	void mouse_move_ogl(double x, double y) override;
 
 private:
-    void init_vao();
-
-private:
     GLVec3 windowToGlCoord(GLVec2 winCoord);
 
 private:
-    std::shared_ptr<ShaderProgram> bezierCurveShaderProgram;
-    std::shared_ptr<ShaderProgram> pointsShaderProgram;
-
-    std::vector<GLVec3> controlPoints;
-    std::shared_ptr<VBO> vbo;
-    std::shared_ptr<VAO> vao;
+    std::unique_ptr<BezierRenderer> bezierRenderer;
+    std::shared_ptr<BezierCurve> bezierCurve;
 
 private:
     int outerTesselationLevel1;
