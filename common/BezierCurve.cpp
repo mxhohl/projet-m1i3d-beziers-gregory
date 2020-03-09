@@ -1,3 +1,4 @@
+#include <iostream>
 #include "BezierCurve.hpp"
 
 BezierCurve::BezierCurve() : BezierCurve(0) {}
@@ -22,13 +23,40 @@ size_t BezierCurve::getOrder() const {
 }
 
 void BezierCurve::elevateOrder(size_t d) {
-    /* TODO */
-    needUpdate();
+    if (d == 0) {
+        needUpdate();
+        return;
+    }
+
+    const size_t order = getOrder();
+    ctrlPoints.resize(ctrlPoints.size() + 1);
+
+    ctrlPoints[order + 1] = ctrlPoints[order];
+
+    for (size_t i = order; i > 0; --i) {
+        const float ratio = static_cast<float>(i) / (order + 1.f);
+        ctrlPoints[i] = ratio * ctrlPoints[i - 1]
+                        - (1.f - ratio) * ctrlPoints[i];
+    }
+
+    elevateOrder(d - 1);
 }
 
 void BezierCurve::lowerOrder(size_t d) {
-    /* TODO */
-    needUpdate();
+    if (d == 0) {
+        needUpdate();
+        return;
+    }
+
+    const size_t order = getOrder();
+    ctrlPoints.resize(ctrlPoints.size() - 1);
+
+    for (size_t i = order + 1; i > 0; --i) {
+        ctrlPoints[i] = (order * ctrlPoints[i] - i * ctrlPoints[i - 1])
+                        / (order - 1);
+    }
+
+    lowerOrder(d - 1);
 }
 
 bool BezierCurve::getClosestCtrlPoint(const GLVec3& point, size_t& i) const {

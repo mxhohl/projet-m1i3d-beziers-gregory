@@ -2,9 +2,10 @@
 
 layout (isolines, equal_spacing) in;
 
-#define MAX_CP 8
+#define MAX_CP 32
 
 uniform uint uCPCount;
+
 
 vec4 deCasteljau(uint cp_count, float t);
 

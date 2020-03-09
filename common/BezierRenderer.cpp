@@ -54,7 +54,6 @@ void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve,
     }
 
     curveSP->bind();
-    // set_uniform_value("uColor", curveColor);
     set_uniform_value("uOuterLevel1", static_cast<GLfloat>(precision));
     set_uniform_value("uCPCount", static_cast<GLuint>(cpCount));
 
@@ -66,7 +65,6 @@ void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve,
 
     cpSP->bind();
     curve->vao->bind();
-    // set_uniform_value("uColor", ctrlPointsColor);
     glDrawArrays(GL_LINE_STRIP, 0, cpCount);
     glDrawArrays(GL_POINTS, 0, cpCount);
     curve->vao->unbind();

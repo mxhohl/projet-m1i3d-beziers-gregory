@@ -1,6 +1,6 @@
 #version 410
 
-#define MAX_CP 8
+#define MAX_CP 32
 
 layout(vertices=MAX_CP) out;
 

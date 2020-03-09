@@ -61,6 +61,23 @@ void Viewer::interface_ogl() {
         ImGui::TreePop();
     }
 
+    if (ImGui::TreeNode("Order")) {
+        if (ImGui::Button("-")) {
+            bezierCurve->lowerOrder();
+        }
+        ImGui::SameLine();
+
+        ImGui::Text("%lu", bezierCurve->getOrder());
+        ImGui::SameLine();
+
+        if (ImGui::Button("+")) {
+            bezierCurve->elevateOrder();
+        }
+        ImGui::SameLine();
+
+        ImGui::TreePop();
+    }
+
     ImGui::End();
 }
 
