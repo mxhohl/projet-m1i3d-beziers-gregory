@@ -63,7 +63,9 @@ void Viewer::interface_ogl() {
 
     if (ImGui::TreeNode("Order")) {
         if (ImGui::Button("-")) {
-            bezierCurve->lowerOrder();
+            if (bezierCurve->getOrder() > 0) {
+                bezierCurve->lowerOrder();
+            }
         }
         ImGui::SameLine();
 
@@ -71,7 +73,9 @@ void Viewer::interface_ogl() {
         ImGui::SameLine();
 
         if (ImGui::Button("+")) {
-            bezierCurve->elevateOrder();
+            if (bezierCurve->getOrder() < 32) {
+                bezierCurve->elevateOrder();
+            }
         }
         ImGui::SameLine();
 

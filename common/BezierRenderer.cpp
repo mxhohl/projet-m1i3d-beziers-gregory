@@ -49,7 +49,7 @@ void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve,
 
     const size_t cpCount = curve->getOrder() +1;
 
-    if (cpCount < 2) {
+    if (cpCount < 1) {
         return;
     }
 
