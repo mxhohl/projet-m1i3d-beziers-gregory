@@ -42,11 +42,6 @@ void BezierRenderer::clear() {
 
 void BezierRenderer::render(const std::shared_ptr<BezierCurve> &curve,
                             float precision) {
-    if (curve->updated) {
-        curve->vbo->update(curve->getCtrlPoints());
-        curve->updated = false;
-    }
-
     const size_t cpCount = curve->getOrder() +1;
 
     if (cpCount < 1) {

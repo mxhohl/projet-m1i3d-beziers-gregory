@@ -24,7 +24,7 @@ size_t BezierCurve::getOrder() const {
 
 void BezierCurve::elevateOrder(size_t d) {
     if (d == 0) {
-        needUpdate();
+        updatePoints(ctrlPoints);
         return;
     }
 
@@ -44,7 +44,7 @@ void BezierCurve::elevateOrder(size_t d) {
 
 void BezierCurve::lowerOrder(size_t d) {
     if (d == 0) {
-        needUpdate();
+        updatePoints(ctrlPoints);
         return;
     }
 
@@ -78,7 +78,7 @@ const GLVec3& BezierCurve::getCtrlPoint(size_t i) const {
 
 void BezierCurve::setCtrlPoint(size_t i, const GLVec3& cp) {
     ctrlPoints[i] = cp;
-    needUpdate();
+    updatePoints(ctrlPoints);
 }
 
 const std::vector<GLVec3>& BezierCurve::getCtrlPoints() const {

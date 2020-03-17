@@ -10,17 +10,21 @@ class RenderableBezier {
     friend class BezierRenderer;
 
 public:
-    explicit RenderableBezier(const std::vector<GLVec3>& points) :
-            updated(true) {
+    RenderableBezier() {
+        vbo = VBO::create({});
+        vao = VAO::create({{0, vbo}});
+    }
+
+    explicit RenderableBezier(const std::vector<GLVec3>& points) {
         vbo = VBO::create(points);
         vao = VAO::create({{0, vbo}});
     }
 
-protected:
-    void needUpdate() { updated = true; }
+    void updatePoints(const std::vector<GLVec3>& points) {
+        vbo->update(points);
+    }
 
 private:
-    bool updated;
     std::shared_ptr<VBO> vbo;
     std::shared_ptr<VAO> vao;
 };
