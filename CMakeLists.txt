@@ -13,22 +13,27 @@ set(COMMON_SRC
         ./common/BezierRenderer.hpp
         ./common/BezierRenderer.cpp
         ./common/RenderableBezier.hpp
-        ./common/utils.hpp)
+        ./common/utils.hpp
+        ./common/BezierRectSurface.cpp
+        ./common/BezierRectSurface.hpp)
 
-add_executable(curves 
-    ./curves/main.cpp 
-    ./curves/Viewer.cpp 
-    ./curves/Viewer.hpp
-    ${COMMON_SRC})
+add_executable(curves
+        ./curves/main.cpp
+        ./curves/Viewer.cpp
+        ./curves/Viewer.hpp
+        ${COMMON_SRC})
 target_link_libraries(curves easycppogl)
 target_compile_definitions(curves PRIVATE
         "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
+target_compile_options(curves PRIVATE -Wall -Wextra)
 
-add_executable(rect_surf 
-    ./rect_surface/main.cpp 
-    ./rect_surface/Viewer.cpp 
-    ./rect_surface/Viewer.hpp)
+add_executable(rect_surf
+        ./rect_surface/main.cpp
+        ./rect_surface/Viewer.cpp
+        ./rect_surface/Viewer.hpp
+        ${COMMON_SRC})
 target_link_libraries(rect_surf easycppogl)
 target_compile_definitions(rect_surf PRIVATE
         "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
-        
+target_compile_options(rect_surf PRIVATE -Wall -Wextra)
+

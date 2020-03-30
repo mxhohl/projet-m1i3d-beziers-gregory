@@ -25,8 +25,7 @@ void Viewer::init_ogl() {
     set_scene_center(GLVec3(0, 0, 0));
     set_scene_radius(3.0);
 
-    glClearColor(0., 0., 0., 1.);
-    glClear(GL_COLOR_BUFFER_BIT);
+    bezierRenderer->clear();
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

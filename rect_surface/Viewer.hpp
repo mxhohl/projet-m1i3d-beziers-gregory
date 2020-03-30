@@ -5,6 +5,9 @@
 #include "easycppogl_src/shader_program.h"
 
 #include "utils.hpp"
+#include "BezierRenderer.hpp"
+#include "BezierRectSurface.hpp"
+
 
 using namespace EZCOGL;
 
@@ -16,15 +19,11 @@ public:
     void interface_ogl() override;
 
 private:
-    void init_bezierSurfaces_vao();
+    void init_ctrlPoints();
 
 private:
-    std::shared_ptr<ShaderProgram> bezierSurfaceShaderProgram;
-    std::shared_ptr<ShaderProgram> transformablePointsShaderProgram;
-
-    std::shared_ptr<VAO> vao;
-    GLuint dimU;
-    GLuint dimV;
+    std::unique_ptr<BezierRenderer> renderer;
+    std::shared_ptr<BezierRectSurface> surface;
 
 private:
     DrawMode drawMode;

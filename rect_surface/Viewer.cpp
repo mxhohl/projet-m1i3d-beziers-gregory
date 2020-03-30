@@ -3,21 +3,17 @@
 #include <random>
 
 Viewer::Viewer() :
-        vao(nullptr),
-        dimU(0),
-        dimV(0),
         drawMode(DrawMode::Fill),
         tesselationLevel(1),
         color{1., 0., 0., 1.},
         pointsSize(10) {
 }
 
-void Viewer::init_bezierSurfaces_vao() {
-    constexpr size_t dimensionU = 6;
-    constexpr size_t dimensionV = 4;
+void Viewer::init_ctrlPoints() {
+    constexpr size_t orderU = 6;
+    constexpr size_t orderV = 4;
 
-    std::vector<GLVec3> vertices;
-    vertices.reserve(dimensionU * dimensionV);
+    surface = std::make_shared<BezierRectSurface>(orderU, orderV);
 
     std::default_random_engine generator(
             std::chrono::system_clock::now().time_since_epoch().count()
@@ -26,103 +22,38 @@ void Viewer::init_bezierSurfaces_vao() {
     auto rand = std::bind(distribution, generator);
 
     constexpr float offset = 1.f;
-    constexpr float uHalfSize = (offset * dimensionU) / 2.f;
-    constexpr float vHalfSize = (offset * dimensionV) / 2.f;
+    constexpr float uHalfSize = (offset * orderU) / 2.f;
+    constexpr float vHalfSize = (offset * orderV) / 2.f;
 
-    for (size_t u = 0; u < dimensionU; ++u) {
-        for (size_t v = 0; v < dimensionV; ++v) {
-            vertices.emplace_back(
+    for (size_t u = 0; u < orderU; ++u) {
+        for (size_t v = 0; v < orderV; ++v) {
+            surface->setCtrlPoint(u, v, {
                     (u * offset) - uHalfSize,
                     (v * offset) - vHalfSize,
                     rand()
-            );
+            });
         }
     }
-
-    auto vbo = VBO::create(vertices);
-    vao = VAO::create({{0, vbo}});
-    dimU = dimensionU;
-    dimV = dimensionV;
 }
 
 void Viewer::init_ogl() {
+    renderer = std::make_unique<BezierRenderer>();
+    renderer->setCtrlPointsColor({0, 1, 0, .5});
 
-    bezierSurfaceShaderProgram = ShaderProgram::create({
-                                                               {
-                                                                       GL_VERTEX_SHADER,
-                                                                       readFile("shaders/basicTransformable_vert.glsl")
-                                                               }, {
-                                                                       GL_TESS_CONTROL_SHADER,
-                                                                       readFile("shaders/bezier_surface_rect/tessCont.glsl")
-                                                               }, {
-                                                                       GL_TESS_EVALUATION_SHADER,
-                                                                       readFile("shaders/bezier_surface_rect/tessEval.glsl")
-                                                               }, {
-                                                                       GL_FRAGMENT_SHADER,
-                                                                       readFile("shaders/basic_frag.glsl")
-                                                               }
-                                                       }, "");
-
-    transformablePointsShaderProgram = ShaderProgram::create({
-                                                                     {
-                                                                             GL_VERTEX_SHADER,
-                                                                             readFile("shaders/basicTransformable_vert.glsl")
-                                                                     }, {
-                                                                             GL_FRAGMENT_SHADER,
-                                                                             readFile("shaders/basic_frag.glsl")
-                                                                     }
-                                                             }, "");
-
-    init_bezierSurfaces_vao();
+    init_ctrlPoints();
 
     set_scene_center(GLVec3(0, 0, 0));
     set_scene_radius(3.0);
 
-    glClearColor(0., 0., 0., 1.);
-    glClear(GL_COLOR_BUFFER_BIT);
+    renderer->clear();
 }
 
 void Viewer::draw_ogl() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPointSize(pointsSize);
+    renderer->setCurveColor({color[0], color[1], color[2], color[3]});
+    renderer->setCtrlPointsSize(static_cast<float>(pointsSize));
 
-    glPolygonMode(GL_FRONT_AND_BACK, gl_draw_mode(drawMode));
-
-    const auto& cpCount = vao->length();
-
-    const auto& projMat = this->get_projection_matrix();
-    const auto& mvMat = this->get_modelview_matrix();
-
-    bezierSurfaceShaderProgram->bind();
-
-    set_uniform_value("projMatrix", projMat);
-    set_uniform_value("mvMatrix", mvMat);
-    set_uniform_value("uColor", GLVec4(color));
-
-    set_uniform_value("uLevel", static_cast<GLfloat>(tesselationLevel));
-
-    set_uniform_value("uCPUCount", dimU);
-    set_uniform_value("uCPVCount", dimV);
-
-    vao->bind();
-    glPatchParameteri(GL_PATCH_VERTICES, cpCount);
-    glDrawArrays(GL_PATCHES, 0, cpCount);
-    vao->unbind();
-
-    bezierSurfaceShaderProgram->unbind();
-
-
-    transformablePointsShaderProgram->bind();
-
-    set_uniform_value("projMatrix", projMat);
-    set_uniform_value("mvMatrix", mvMat);
-    set_uniform_value("uColor", GLVec4({0., 1., 0., 1.}));
-
-    vao->bind();
-    glDrawArrays(GL_POINTS, 0, cpCount);
-    vao->unbind();
-
-    transformablePointsShaderProgram->unbind();
+    renderer->clear();
+    renderer->render(surface, static_cast<float>(tesselationLevel));
 }
 
 void Viewer::interface_ogl() {
