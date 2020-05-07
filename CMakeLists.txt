@@ -15,7 +15,7 @@ set(COMMON_SRC
         ./common/RenderableBezier.hpp
         ./common/utils.hpp
         ./common/BezierRectSurface.cpp
-        ./common/BezierRectSurface.hpp)
+        ./common/BezierRectSurface.hpp common/GregoryRectSurface.cpp common/GregoryRectSurface.hpp)
 
 add_executable(curves
         ./curves/main.cpp
@@ -37,3 +37,10 @@ target_compile_definitions(rect_surf PRIVATE
         "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
 target_compile_options(rect_surf PRIVATE -Wall -Wextra)
 
+add_executable(gregory
+        ./gregory/main.cpp
+        ${COMMON_SRC} gregory/Viewer.cpp gregory/Viewer.hpp)
+target_link_libraries(gregory easycppogl)
+target_compile_definitions(gregory PRIVATE
+        "-DRESOURCES=${CMAKE_SOURCE_DIR}/resources")
+target_compile_options(gregory PRIVATE -Wall -Wextra)
