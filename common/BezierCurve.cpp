@@ -4,16 +4,16 @@
 BezierCurve::BezierCurve() : BezierCurve(0) {}
 
 BezierCurve::BezierCurve(size_t order) :
-        ctrlPoints(order +1, {0, 0, 0}),
-        RenderableBezier(ctrlPoints) {}
+        RenderableBezier(ctrlPoints),
+        ctrlPoints(order +1, {0, 0, 0}) {}
 
 BezierCurve::BezierCurve(const std::vector<GLVec3>& ctrlPoints) :
-        ctrlPoints(ctrlPoints),
-        RenderableBezier(ctrlPoints) {}
+        RenderableBezier(ctrlPoints),
+        ctrlPoints(ctrlPoints) {}
 
 BezierCurve::BezierCurve(std::initializer_list<GLVec3> ctrlPoints) :
-        ctrlPoints(ctrlPoints),
-        RenderableBezier(ctrlPoints) {}
+        RenderableBezier(ctrlPoints),
+        ctrlPoints(ctrlPoints) {}
 
 BezierCurve::BezierCurve(const BezierCurve&) = default;
 BezierCurve::BezierCurve(BezierCurve&&) noexcept = default;
