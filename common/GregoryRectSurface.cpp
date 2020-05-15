@@ -121,7 +121,6 @@ void GregoryRectSurface::draw() {
     ctrlPointSP->unbind();
 
     surfaceSP->bind();
-    // set_uniform_value("uColor", GLColor{0, 0, 255, 255});
     set_uniform_value("uLevel", 50.f);
     vao->bind();
     glPatchParameteri(GL_PATCH_VERTICES, ctrlPoints.size());
