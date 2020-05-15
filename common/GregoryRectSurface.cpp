@@ -17,7 +17,7 @@ GregoryRectSurface::GregoryRectSurface() {
     surfaceSP = ShaderProgram::create({
         {
             GL_FRAGMENT_SHADER,
-            readFile("shaders/basic_frag.glsl")
+            readFile("shaders/basic_fragUV.glsl")
         }, {
             GL_TESS_CONTROL_SHADER,
             readFile("shaders/gregory_surface_rect/tessCont.glsl")
@@ -121,7 +121,7 @@ void GregoryRectSurface::draw() {
     ctrlPointSP->unbind();
 
     surfaceSP->bind();
-    set_uniform_value("uColor", GLColor{0, 0, 255, 255});
+    // set_uniform_value("uColor", GLColor{0, 0, 255, 255});
     set_uniform_value("uLevel", 50.f);
     vao->bind();
     glPatchParameteri(GL_PATCH_VERTICES, ctrlPoints.size());

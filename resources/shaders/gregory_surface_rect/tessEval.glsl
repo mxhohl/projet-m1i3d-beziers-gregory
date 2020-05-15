@@ -6,6 +6,8 @@ uniform mat4 projMatrix;
 
 layout (quads, equal_spacing, ccw) in;
 
+out vec2 uv;
+
 vec4 deCasteljau1D(vec4 cp[CP_COUNT], uint cp_count,
                    uint offset, uint stride, float t);
 vec4 deCasteljau2D(vec4 cp[CP_COUNT],
@@ -15,6 +17,7 @@ vec4 deCasteljau2D(vec4 cp[CP_COUNT],
 void main() {
     float u = gl_TessCoord.x;
     float v = gl_TessCoord.y;
+    uv = vec2(u, v);
 
     vec4 cp[CP_COUNT];
     for (int i = 0; i < CP_COUNT; ++i) {
@@ -23,14 +26,14 @@ void main() {
         }
     }
 
-    vec4 a = u * gl_in[5].gl_Position;
-    vec4 b = v * gl_in[16].gl_Position;
-    float c = u + v;
-    cp[5] = (a + b) / (c);
-
-    cp[6] = (u * gl_in[6].gl_Position + (1.0 - v) * gl_in[17].gl_Position) / (u + (1.0 - v));
-    cp[9] = ((1.0 - u) * gl_in[9].gl_Position + v * gl_in[18].gl_Position) / ((1.0 - u) + v);
-    cp[10] = ((1.0 - u) * gl_in[10].gl_Position + (1.0 - v) * gl_in[19].gl_Position) / (2.0 - u - v);
+    cp[5] = (u * gl_in[5].gl_Position + v * gl_in[16].gl_Position)
+          / (u + v);
+    cp[6] = (u * gl_in[6].gl_Position + (1.0 - v) * gl_in[17].gl_Position)
+          / (u + (1.0 - v));
+    cp[9] = ((1.0 - u) * gl_in[9].gl_Position + v * gl_in[18].gl_Position)
+          / ((1.0 - u) + v);
+    cp[10] = ((1.0 - u) * gl_in[10].gl_Position + (1.0 - v) * gl_in[19].gl_Position)
+           / (2.0 - u - v);
 
     gl_Position = projMatrix * deCasteljau2D(cp, 4, 4, u, v);
 }
