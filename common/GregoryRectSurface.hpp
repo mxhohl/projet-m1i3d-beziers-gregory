@@ -22,7 +22,18 @@ public:
     const GLMat4 &getModelViewMatrix() const;
     void setModelViewMatrix(const GLMat4& mat);
 
+    void setPointsSize(int pointsSize);
+
+    int getTesselationLevel() const;
+    void setTesselationLevel(int level);
+
+    GLenum getDrawMode() const;
+    void setDrawMode(GLenum mode);
+
 private:
+    int tesselationLevel;
+    GLenum drawMode;
+
     std::shared_ptr<VAO> vao;
     std::shared_ptr<VBO> vbo;
 

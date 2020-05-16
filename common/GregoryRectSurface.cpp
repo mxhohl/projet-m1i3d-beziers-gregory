@@ -2,13 +2,14 @@
 #include "GregoryRectSurface.hpp"
 #include "utils.hpp"
 
-GregoryRectSurface::GregoryRectSurface() {
+GregoryRectSurface::GregoryRectSurface() :
+        tesselationLevel(1),
+        drawMode(GL_FILL) {
     ctrlPointSP = ShaderProgram::create({
         {
             GL_FRAGMENT_SHADER,
             readFile("shaders/basic_frag.glsl")
-        },
-        {
+        }, {
             GL_VERTEX_SHADER,
             readFile("shaders/basicTransformable_vert.glsl")
         }
@@ -104,7 +105,6 @@ GregoryRectSurface::GregoryRectSurface() {
     ctrlPointsEbo->bind();
     vao->unbind();
 
-    glPointSize(7);
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -121,7 +121,7 @@ void GregoryRectSurface::draw() {
     ctrlPointSP->unbind();
 
     surfaceSP->bind();
-    set_uniform_value("uLevel", 50.f);
+    set_uniform_value("uLevel", static_cast<float>(tesselationLevel));
     vao->bind();
     glPatchParameteri(GL_PATCH_VERTICES, ctrlPoints.size());
     glDrawArrays(GL_PATCHES, 0, ctrlPoints.size());
@@ -159,4 +159,24 @@ void GregoryRectSurface::setModelViewMatrix(const GLMat4& mat) {
     surfaceSP->bind();
     set_uniform_value("mvMatrix", modelViewMatrix);
     surfaceSP->unbind();
+}
+
+void GregoryRectSurface::setPointsSize(int pointsSize) {
+    glPointSize(pointsSize);
+}
+
+int GregoryRectSurface::getTesselationLevel() const {
+    return tesselationLevel;
+}
+
+void GregoryRectSurface::setTesselationLevel(int level) {
+    tesselationLevel = level;
+}
+
+GLenum GregoryRectSurface::getDrawMode() const {
+    return drawMode;
+}
+
+void GregoryRectSurface::setDrawMode(GLenum mode) {
+    drawMode = mode;
 }

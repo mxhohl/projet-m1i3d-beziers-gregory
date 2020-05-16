@@ -2,7 +2,9 @@
 #define BEZIER_VIEWER_HPP
 
 #include <easycppogl_src/gl_viewer.h>
+#include <easycppogl_src/shader_program.h>
 
+#include "utils.hpp"
 #include "GregoryRectSurface.hpp"
 
 using namespace EZCOGL;
@@ -16,6 +18,10 @@ public:
 
 private:
     std::shared_ptr<GregoryRectSurface> gregoryRectSurface;
+
+    DrawMode drawMode;
+    int tesselationLevel;
+    int pointsSize;
 };
 
 

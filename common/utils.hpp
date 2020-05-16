@@ -46,7 +46,7 @@ inline GLenum gl_draw_mode(DrawMode mode) {
         case DrawMode::Fill:
             return GL_FILL;
         default:
-            std::cerr << "Unknwn draw mode. Using GL_POINT." << std::endl;
+            std::cerr << "Unknown draw mode. Using GL_POINT." << std::endl;
             return GL_POINT;
     }
 }

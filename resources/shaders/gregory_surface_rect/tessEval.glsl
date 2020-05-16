@@ -57,7 +57,6 @@ vec4 deCasteljau2D(vec4 cp[CP_COUNT],
     }
 
     return deCasteljau1D(points, cp_u_count, 0, 1, u);
-
 }
 
 vec4 deCasteljau1D(vec4 cp[CP_COUNT], uint cp_count,
